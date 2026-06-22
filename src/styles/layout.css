@@ -1,0 +1,31 @@
+.app-header {
+  padding: 20px 32px;
+  background-color: #fff;
+  border-bottom: 1px solid #e8e8e8;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+.app-header h1 {
+  font-size: 20px;
+  color: #1a1a1a;
+}
+
+.app-main {
+  flex: 1;
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.placeholder-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px dashed #d9d9d9;
+  color: #999;
+  font-size: 16px;
+}
