@@ -3,6 +3,7 @@ import './styles/layout.css'
 import './styles/components.css'
 import ColorPicker from './components/ColorPicker.js'
 import Palette from './components/Palette.js'
+import ContrastChecker from './components/ContrastChecker.js'
 
 const app = document.querySelector('#app')
 
@@ -18,19 +19,23 @@ contentGrid.className = 'content-grid'
 
 const colorPicker = new ColorPicker('#3b82f6')
 const palette = new Palette()
+const contrastChecker = new ContrastChecker('#3b82f6')
 
 contentGrid.appendChild(colorPicker.render())
 contentGrid.appendChild(palette.render())
 main.appendChild(contentGrid)
+main.appendChild(contrastChecker.render())
 app.appendChild(header)
 app.appendChild(main)
 
 colorPicker.onChange((hex) => {
   palette.setSelected(hex)
+  contrastChecker.setColor(hex)
 })
 
 palette.onSelect((hex) => {
   colorPicker.setColor(hex)
+  contrastChecker.setColor(hex)
 })
 
 palette.setSelected(colorPicker.color)

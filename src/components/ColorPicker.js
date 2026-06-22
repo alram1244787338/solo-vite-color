@@ -1,9 +1,20 @@
 import { hexToRgb, hexToHsl, isValidHex, normalizeHex } from '../utils/color.js'
 
+function debounce(fn, delay) {
+  let timer = null
+  return function (...args) {
+    if (timer) clearTimeout(timer)
+    timer = setTimeout(() => fn.apply(this, args), delay)
+  }
+}
+
 export default class ColorPicker {
   constructor(initialColor = '#3b82f6') {
     this.color = normalizeHex(initialColor)
+    this.validColor = this.color
     this.listeners = []
+    this.hexInputError = false
+    this._debouncedSyncColor = debounce((val) => this._syncColorFromInput(val), 300)
   }
 
   onChange(callback) {
@@ -14,6 +25,8 @@ export default class ColorPicker {
     const normalized = normalizeHex(newColor)
     if (normalized !== this.color) {
       this.color = normalized
+      this.validColor = normalized
+      this.hexInputError = false
       this.listeners.forEach(cb => cb(this.color))
       this._updateView()
     }
@@ -33,7 +46,7 @@ export default class ColorPicker {
       </div>
       <div class="picker-row">
         <label class="picker-label">HEX</label>
-        <div class="hex-input-wrapper">
+        <div class="hex-input-wrapper" id="cp-hex-wrapper">
           <span class="hex-prefix">#</span>
           <input
             type="text"
@@ -45,6 +58,7 @@ export default class ColorPicker {
           />
         </div>
       </div>
+      <div class="error-message" id="cp-error" style="display:none">无效的颜色值</div>
       <h3 class="section-subtitle">格式转换</h3>
       <div class="format-list">
         <div class="format-row">
@@ -79,20 +93,55 @@ export default class ColorPicker {
     hexInput.addEventListener('input', (e) => {
       const val = e.target.value.replace(/[^a-fA-F0-9]/g, '')
       e.target.value = val
-      if (val.length === 3 || val.length === 6) {
-        const hex = '#' + val
-        if (isValidHex(hex)) {
-          this.color = normalizeHex(hex)
-          this.listeners.forEach(cb => cb(this.color))
-          this._updateView()
-          colorInput.value = this.color
-        }
-      }
+      this._debouncedSyncColor(val)
     })
 
     hexInput.addEventListener('blur', () => {
       hexInput.value = this.color.replace('#', '')
+      if (this.hexInputError) {
+        this.hexInputError = false
+        this._updateErrorState()
+      }
     })
+  }
+
+  _syncColorFromInput(val) {
+    const hexInput = this.el.querySelector('#cp-hex')
+    const colorInput = this.el.querySelector('#cp-color')
+
+    if (val.length === 3 || val.length === 6) {
+      const hex = '#' + val
+      if (isValidHex(hex)) {
+        this.color = normalizeHex(hex)
+        this.validColor = this.color
+        this.hexInputError = false
+        this.listeners.forEach(cb => cb(this.color))
+        this._updateView()
+        colorInput.value = this.color
+      } else {
+        this.hexInputError = true
+        this._updateErrorState()
+      }
+    } else if (val.length === 0) {
+      this.hexInputError = false
+      this._updateErrorState()
+    } else {
+      this.hexInputError = true
+      this._updateErrorState()
+    }
+  }
+
+  _updateErrorState() {
+    if (!this.el) return
+    const wrapper = this.el.querySelector('#cp-hex-wrapper')
+    const errorMsg = this.el.querySelector('#cp-error')
+    if (this.hexInputError) {
+      wrapper.classList.add('error')
+      errorMsg.style.display = 'block'
+    } else {
+      wrapper.classList.remove('error')
+      errorMsg.style.display = 'none'
+    }
   }
 
   _updateView() {
@@ -105,15 +154,17 @@ export default class ColorPicker {
     const fmtRgb = this.el.querySelector('#cp-fmt-rgb')
     const fmtHsl = this.el.querySelector('#cp-fmt-hsl')
 
-    preview.style.backgroundColor = this.color
-    colorInput.value = this.color
-    hexInput.value = this.color.replace('#', '')
+    preview.style.backgroundColor = this.validColor
+    colorInput.value = this.validColor
+    hexInput.value = this.validColor.replace('#', '')
 
-    const rgb = hexToRgb(this.color)
-    const hsl = hexToHsl(this.color)
+    const rgb = hexToRgb(this.validColor)
+    const hsl = hexToHsl(this.validColor)
 
-    fmtHex.textContent = this.color.toUpperCase()
-    fmtRgb.textContent = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`
-    fmtHsl.textContent = `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)`
+    fmtHex.textContent = this.validColor.toUpperCase()
+    fmtRgb.textContent = `rgb(${Math.round(rgb.r)}, ${Math.round(rgb.g)}, ${Math.round(rgb.b)})`
+    fmtHsl.textContent = `hsl(${Math.round(hsl.h)}, ${Math.round(hsl.s)}%, ${Math.round(hsl.l)}%)`
+
+    this._updateErrorState()
   }
 }

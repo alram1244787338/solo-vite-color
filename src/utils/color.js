@@ -104,3 +104,46 @@ export function hslToHex(h, s, l) {
   const { r, g, b } = hslToRgb(h, s, l)
   return rgbToHex(r, g, b)
 }
+
+function getLinearChannel(c) {
+  c = c / 255
+  return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+}
+
+export function getRelativeLuminance(r, g, b) {
+  const R = getLinearChannel(r)
+  const G = getLinearChannel(g)
+  const B = getLinearChannel(b)
+  return 0.2126 * R + 0.7152 * G + 0.0722 * B
+}
+
+export function getContrastRatio(l1, l2) {
+  const lighter = Math.max(l1, l2)
+  const darker = Math.min(l1, l2)
+  return (lighter + 0.05) / (darker + 0.05)
+}
+
+export function hexToLuminance(hex) {
+  const { r, g, b } = hexToRgb(hex)
+  return getRelativeLuminance(r, g, b)
+}
+
+export function getContrastWithWhite(hex) {
+  const l = hexToLuminance(hex)
+  const whiteL = getRelativeLuminance(255, 255, 255)
+  return getContrastRatio(l, whiteL)
+}
+
+export function getContrastWithBlack(hex) {
+  const l = hexToLuminance(hex)
+  const blackL = getRelativeLuminance(0, 0, 0)
+  return getContrastRatio(l, blackL)
+}
+
+export function meetsWcagAa(ratio) {
+  return ratio >= 4.5
+}
+
+export function meetsWcagAaLarge(ratio) {
+  return ratio >= 3
+}
